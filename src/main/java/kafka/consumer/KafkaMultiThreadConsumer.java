@@ -1,4 +1,4 @@
-package com.uitox.kafka;
+package kafka.consumer;
 
 import java.util.HashMap;
 import java.util.List;
@@ -13,7 +13,6 @@ import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
-import kafka.message.MessageAndMetadata;
 
 public class KafkaMultiThreadConsumer {
 
@@ -28,22 +27,16 @@ public class KafkaMultiThreadConsumer {
 
     public void run(int numThreads) {
         Map<String, Integer> topicMap = new HashMap<String, Integer>();
-        topicMap.put(topic, new Integer(1));
+        topicMap.put(topic, new Integer(numThreads));
         Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = consumer.createMessageStreams(topicMap);
         List<KafkaStream<byte[], byte[]>> streams = consumerMap.get(topic);
         executor = Executors.newFixedThreadPool(numThreads);
 
+        int threadNumber = 0;
         for (final KafkaStream<byte[], byte[]> stream : streams) {
-            ConsumerIterator<byte[], byte[]> consumerIte = stream.iterator();
-            int threadNumber = 0;
-            while (consumerIte.hasNext()) {
-                executor.submit(new ConsumerTest(threadNumber, consumerIte.next()));
-                threadNumber++;
-            }
+            executor.submit(new ConsumerTest(stream, threadNumber));
+            threadNumber++;
         }
-
-        if (consumer != null)
-            consumer.shutdown();
     }
 
     private static ConsumerConfig createConsumerConfig(String zookeeper, String groupId) {
@@ -88,35 +81,31 @@ public class KafkaMultiThreadConsumer {
 
         KafkaMultiThreadConsumer c = new KafkaMultiThreadConsumer(zookeeper, groupId, topic);
         c.run(3);
-
-        // try {
-        // Thread.sleep(10000);
-        // } catch (InterruptedException e) {
-        // e.printStackTrace();
-        // }
-        //
-        // c.shutdown();
     }
 
-}
+    class ConsumerTest implements Runnable {
+        private KafkaStream<byte[], byte[]> stream;
+        private int threadNumber;
 
-class ConsumerTest implements Runnable {
-    private MessageAndMetadata<byte[], byte[]> message;
-    private int threadNumber;
+        public ConsumerTest(KafkaStream<byte[], byte[]> stream, int threadNumber) {
+            this.stream = stream;
+            this.threadNumber = threadNumber;
+        }
 
-    public ConsumerTest(int threadNumber, MessageAndMetadata<byte[], byte[]> message) {
-        this.message = message;
-        this.threadNumber = threadNumber;
-    }
+        @Override
+        public void run() {
+            ConsumerIterator<byte[], byte[]> it = stream.iterator();
+            while (it.hasNext()) {
+                System.out.println("Thread " + threadNumber + ": " + new String(it.next().message()));
+                // try {
+                // int rand = new Random().nextInt(1000);
+                // Thread.sleep(rand);
+                // } catch (InterruptedException e) {
+                // e.printStackTrace();
+                // }
+            }
+            System.out.println("Shutting down Thread: " + threadNumber);
 
-    @Override
-    public void run() {
-        int rand = new Random().nextInt(1000);
-        System.out.println("Thread-" + Thread.currentThread().getId() + ": " + new String(message.message()));
-        try {
-            Thread.sleep(rand);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 }
