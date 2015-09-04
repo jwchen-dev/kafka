@@ -10,7 +10,7 @@ import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 
-public class KafkaMultiThreadProducer implements Runnable {
+public class KafkaMultiThreadProducer2 implements Runnable {
 
     private static Producer<String, String> producer = null;
 
@@ -18,7 +18,7 @@ public class KafkaMultiThreadProducer implements Runnable {
     private int messageCount = -1;
     private Integer id = 0;
 
-    public KafkaMultiThreadProducer(String topic, int messageCount, int id) {
+    public KafkaMultiThreadProducer2(String topic, int messageCount, int id) {
         Properties props = new Properties();
         // Set the broker list for requesting metadata to find the lead broker
         props.put("metadata.broker.list", "localhost:9092,localhost:9091,localhost:9090,localhost:9089");
@@ -54,8 +54,8 @@ public class KafkaMultiThreadProducer implements Runnable {
 
     public static void main(String[] args) {
         final long START=System.currentTimeMillis();
-        final String TOPIC = "test2";
-//        final String TOPIC = "helloworld";
+//        final String TOPIC = "test2";
+        final String TOPIC = "helloworld";
         final int COUNT = 100;
         final int POOL_SIZE = 10;
 
@@ -67,7 +67,7 @@ public class KafkaMultiThreadProducer implements Runnable {
 
         // submit job
         for (int i = 0; i < POOL_SIZE; i++) {
-            KafkaMultiThreadProducer producer = new KafkaMultiThreadProducer(TOPIC, COUNT, i);
+            KafkaMultiThreadProducer2 producer = new KafkaMultiThreadProducer2(TOPIC, COUNT, i);
             executor.submit(producer);
             try {
                 Thread.sleep(1000);
